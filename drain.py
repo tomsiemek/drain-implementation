@@ -2,9 +2,6 @@
 Basic version with only length layer and static similarity threshold
 """
 
-import re
-
-
 class Cluster:
     cluster_counter = 0
     PLACEHOLDER = "<*>"
@@ -13,9 +10,6 @@ class Cluster:
         self.template_tokens = tokens
         self.number_of_consts = len(tokens)
         self.id = f"#{Cluster.cluster_counter}"
-        for t in tokens:
-           if re.match(r"[<>]", t):
-               self.number_of_consts -= 1
         Cluster.cluster_counter += 1
 
     def compare(self, tokens: [str]):
@@ -24,19 +18,19 @@ class Cluster:
         """
         identity_count = 0
         for template, token in zip(self.template_tokens, tokens):
-            if not re.match(r"[<>]", template) and template == token:
+            if template != Cluster.PLACEHOLDER and template == token:
                 identity_count += 1
         return identity_count / self.number_of_consts
         
     def update_template(self, tokens: [str]):
         for i in range(len(tokens)):
-            if not re.match(r"[<>]", self.template_tokens[i]) and self.template_tokens[i] != tokens[i]:
+            if self.template_tokens[i] != Cluster.PLACEHOLDER and self.template_tokens[i] != tokens[i]:
                 self.template_tokens[i] = Cluster.PLACEHOLDER
+                self.number_of_consts -= 1
 
 
 class Drain:
     def __init__(self):
-        self.token_layers = 1
         self.length_nodes = {}
         self.clusters = []
         self.similarity_threshold = 0.5
