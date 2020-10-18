@@ -1,5 +1,5 @@
 """
-Basic version with only length layer and static similarity threshold
+Basic version with only first token split and static similarity threshold
 """
 
 class Cluster:

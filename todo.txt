@@ -1,0 +1,6 @@
+- for every length node create 3 baskets
+    - first token split basket
+    - last token split basket
+    - no split token basket
+- auto updating similarity thershold
+- preprocessing layer
