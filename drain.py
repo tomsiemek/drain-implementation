@@ -12,6 +12,7 @@ class Cluster:
         self.template_tokens = tokens
         self.number_of_consts = len(tokens)
         self.id = f"#{Cluster.cluster_counter}"
+        self.found_messages = 1
         Cluster.cluster_counter += 1
 
     def compare(self, tokens: [str]):
@@ -25,10 +26,13 @@ class Cluster:
         return identity_count / self.number_of_consts
         
     def update_template(self, tokens: [str]):
+        self.found_messages += 1
         for i in range(len(tokens)):
             if self.template_tokens[i] != Cluster.PLACEHOLDER and self.template_tokens[i] != tokens[i]:
                 self.template_tokens[i] = Cluster.PLACEHOLDER
                 self.number_of_consts -= 1
+    def __str__(self):
+        return f"{self.id} found_messages: {self.found_messages} template: {' '.join(self.template_tokens)}"
 
 
 class Drain:
@@ -56,6 +60,7 @@ class Drain:
         """
         max_val = 0
         max_cluster = None
+        similarity = 0
         for cluster in clusters:
             similarity = cluster.compare(tokens)
             if max_val < similarity:
@@ -65,7 +70,6 @@ class Drain:
     
     def determine_split_token_flag(self, tokens: [str]):
         """
-        Not finished.
         Determines which split token should be used to route the tree.
         """
         first_token = tokens[0]
@@ -91,16 +95,19 @@ class Drain:
         # node representing given length exist
         if length in self.length_nodes:
             split_token_nodes = self.length_nodes[length][split_token_flag]
-            # if node with given split token exist
-            if split_token in split_token_nodes:
-                clusters = split_token_nodes[split_token]
-            # if there is no given split token           
+            if split_token_flag == Drain.NO_SPLIT_TOKEN:
+                clusters = self.length_nodes[length][split_token_flag]
             else:
-                new_cluster = Cluster(tokens)
-                clusters = [new_cluster]
-                split_token_nodes[split_token] = clusters
-                self.clusters.append(new_cluster)
-                return new_cluster
+                split_token_nodes = self.length_nodes[length][split_token_flag]
+                if split_token in split_token_nodes:
+                    clusters = split_token_nodes[split_token]
+                # if there is no given split token           
+                else:
+                    new_cluster = Cluster(tokens)
+                    clusters = [new_cluster]
+                    split_token_nodes[split_token] = clusters
+                    self.clusters.append(new_cluster)
+                    return new_cluster
             similarity, best_cluster = self.look_for_suitable_cluster(tokens, clusters)
             # if found cluster have necessary similarity
             if similarity > self.similarity_threshold:
@@ -109,17 +116,23 @@ class Drain:
             # there is no matching cluster, creating new one
             else:
                 new_cluster = Cluster(tokens)
-                split_token_nodes[split_token].append(new_cluster)
+                clusters.append(new_cluster)
                 self.clusters.append(new_cluster)
                 return new_cluster
         # there is no node representing given length
         else:
             new_cluster = Cluster(tokens)
             clusters = [new_cluster]
-            self.length_nodes[length] = {Drain.FIRST_TOKEN: {}, Drain.LAST_TOKEN: {}, Drain.NO_SPLIT_TOKEN: {}}
-            self.length_nodes[length][split_token_flag][split_token] = clusters
+            self.length_nodes[length] = {Drain.FIRST_TOKEN: {}, Drain.LAST_TOKEN: {}, Drain.NO_SPLIT_TOKEN: []}
+            if split_token_flag == Drain.NO_SPLIT_TOKEN:
+                self.length_nodes[length][split_token_flag] = clusters
+            else:
+                self.length_nodes[length][split_token_flag][split_token] = clusters
             self.clusters.append(new_cluster)
             return new_cluster
+
+    def give_cluster_list(self):
+        return [str(cluster) for cluster in self.clusters]
 
 
 if __name__ == "__main__":
@@ -137,3 +150,4 @@ if __name__ == "__main__":
     for l in example_logs:
         print(l)
         print(drain.parse_message(l))
+    print(drain.give_cluster_list())

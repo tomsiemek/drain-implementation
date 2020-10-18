@@ -1,5 +1,5 @@
 import re
-
+filename = ".\\logs\\Hadoop_2k.log" 
 
 class Bubu:
     counter = 0

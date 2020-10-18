@@ -1,3 +1,4 @@
-- split_token_flag choosing function
-- auto updating similarity thershold
+- auto updating similarity threshold
 - preprocessing layer
+- more sophisticated split function - what special characters?
+- generate parse tree lookup
