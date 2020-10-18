@@ -1,6 +1,3 @@
-- for every length node create 3 baskets
-    - first token split basket
-    - last token split basket
-    - no split token basket
+- split_token_flag choosing function
 - auto updating similarity thershold
 - preprocessing layer
