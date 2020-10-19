@@ -1,4 +1,2 @@
 - auto updating similarity threshold
-- preprocessing layer
 - more sophisticated split function - what special characters?
-- generate parse tree lookup

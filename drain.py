@@ -134,6 +134,32 @@ class Drain:
 
     def give_cluster_list(self):
         return [str(cluster) for cluster in self.clusters]
+    def give_tree(self):
+        """
+        Returns string with representation of parse tree.
+        """
+        output_string = f"Number_of_clusters: {len(self.clusters)}, different length nodes: {len(self.length_nodes)}\n"
+        tab = "    "
+        for length, nodes in self.length_nodes.items():
+            output_string += f"Length: {length}\n"
+            if self.length_nodes[length][Drain.FIRST_TOKEN]:
+                output_string += tab + "First_token\n"
+                for token, clusters in self.length_nodes[length][Drain.FIRST_TOKEN].items():
+                    output_string += tab * 2 + token + "\n"
+                    for cluster in clusters:
+                        output_string += tab * 3 + str(cluster) + "\n"
+            if self.length_nodes[length][Drain.LAST_TOKEN]:
+                output_string += tab + "Last_token\n"
+                for token, clusters in self.length_nodes[length][Drain.LAST_TOKEN].items():
+                    output_string += tab * 2 + token + "\n"
+                    for cluster in clusters:
+                        output_string += tab * 3 + str(cluster) + "\n"
+            if self.length_nodes[length][Drain.NO_SPLIT_TOKEN]:
+                output_string += tab + "No_split_token\n"
+                clusters = self.length_nodes[length][Drain.NO_SPLIT_TOKEN]
+                for cluster in clusters:
+                    output_string += tab * 3 + str(cluster) + "\n"
+        return output_string
 
 
 if __name__ == "__main__":
@@ -153,3 +179,5 @@ if __name__ == "__main__":
         print(l)
         print(drain.parse_message(l))
     print(drain.give_cluster_list())
+    print("'\n\n'")
+    print(drain.give_tree())

@@ -16,5 +16,4 @@ output_structured = open(".\\output\\output_" + extract_filename(filename)  + ti
 output_clusters = open(".\\output\\clusters_" + extract_filename(filename)  + timestr + ".txt", "a")
 for l in input_file:
     output_structured.write(f"{l} -> {drain.parse_message(l)}\n")
-for c in drain.give_cluster_list():
-    output_clusters.write(c + "\n")
+output_clusters.write( drain.give_tree() )
