@@ -1,4 +1,5 @@
 import re
+from math import log
 filename = ".\\logs\\Hadoop_2k.log" 
 
 class Bubu:
@@ -30,3 +31,22 @@ def test_whole(string):
 
 def test_tokens(tokens):
     return [ip_reg.sub("<IP>",t) for t in tokens]
+
+
+DIGITS_RE = re.compile('\d')
+def contains_digits(string):
+    return DIGITS_RE.search(string)
+
+def calc_base_st_init(tokens):
+    digits_count = 0
+    for token in tokens:
+        if contains_digits(token):
+            digits_count += 1
+    base = max(2, digits_count + 1)
+    st_init = 0.5 * (len(tokens) - digits_count) / len(tokens)
+    return (st_init, base)
+
+def new_st(st_init, base, n):
+    return min(1, st_init + 0.5 * log(n+1, base))
+
+(st_init, base) = calc_base_st_init(example_tokens)

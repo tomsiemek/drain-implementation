@@ -4,6 +4,14 @@ Basic version with only first token split and static similarity threshold
 
 import re
 from preprocessor import Preprocessor
+from math import log
+
+
+DIGITS_RE = re.compile('\d')
+def contains_digits(string):
+    return DIGITS_RE.search(string)
+
+
 
 class Cluster:
     cluster_counter = 0
@@ -15,6 +23,14 @@ class Cluster:
         self.id = f"#{Cluster.cluster_counter}"
         self.found_messages = 1
         Cluster.cluster_counter += 1
+        number_of_variable_candidates = 0
+        for token in tokens:
+            if contains_digits(token):
+                number_of_variable_candidates += 1
+        self.st_base = max(2, number_of_variable_candidates + 1)
+        self.st_init = 0.5 * (len(tokens) - number_of_variable_candidates) / len(tokens)
+        self.similarity_threshold = self.st_init
+
 
     def compare(self, tokens: [str]):
         """
@@ -24,7 +40,8 @@ class Cluster:
         for template, token in zip(self.template_tokens, tokens):
             if template != Cluster.PLACEHOLDER and template == token:
                 identity_count += 1
-        return identity_count / self.number_of_consts
+        similarity = identity_count / self.number_of_consts
+        return similarity if similarity > self.similarity_threshold else 0
         
     def update_template(self, tokens: [str]):
         self.found_messages += 1
@@ -32,6 +49,7 @@ class Cluster:
             if self.template_tokens[i] != Cluster.PLACEHOLDER and self.template_tokens[i] != tokens[i]:
                 self.template_tokens[i] = Cluster.PLACEHOLDER
                 self.number_of_consts -= 1
+        self.similarity_threshold = min(1, self.st_init + 0.5 * log(len(tokens) - self.number_of_consts + 1, self.st_base))
     def __str__(self):
         return f"{self.id} found_messages: {self.found_messages} template: {' '.join(self.template_tokens)}"
 
@@ -43,8 +61,6 @@ class Drain:
     def __init__(self):
         self.length_nodes = {}
         self.clusters = []
-        self.similarity_threshold = 0.5
-        self.digits_re = re.compile('\d')
         self.preprocessor = Preprocessor()
 
     def parse_message(self, message_raw: str):
@@ -67,7 +83,7 @@ class Drain:
             if max_val < similarity:
                 max_val = similarity
                 max_cluster = cluster
-        return (similarity, max_cluster)
+        return max_cluster
     
     def determine_split_token_flag(self, tokens: [str]):
         """
@@ -75,8 +91,8 @@ class Drain:
         """
         first_token = tokens[0]
         last_token = tokens[len(tokens) - 1]
-        if self.digits_re.search(first_token):
-            if self.digits_re.search(last_token):
+        if contains_digits(first_token):
+            if contains_digits(last_token):
                 return Drain.NO_SPLIT_TOKEN
             else:
                 return Drain.LAST_TOKEN
@@ -109,9 +125,9 @@ class Drain:
                     split_token_nodes[split_token] = clusters
                     self.clusters.append(new_cluster)
                     return new_cluster
-            similarity, best_cluster = self.look_for_suitable_cluster(tokens, clusters)
+            best_cluster = self.look_for_suitable_cluster(tokens, clusters)
             # if found cluster have necessary similarity
-            if similarity > self.similarity_threshold:
+            if best_cluster:
                 best_cluster.update_template(tokens)
                 return best_cluster
             # there is no matching cluster, creating new one
@@ -142,21 +158,21 @@ class Drain:
         tab = "    "
         for length, nodes in self.length_nodes.items():
             output_string += f"Length: {length}\n"
-            if self.length_nodes[length][Drain.FIRST_TOKEN]:
+            if nodes[Drain.FIRST_TOKEN]:
                 output_string += tab + "First_token\n"
-                for token, clusters in self.length_nodes[length][Drain.FIRST_TOKEN].items():
+                for token, clusters in nodes[Drain.FIRST_TOKEN].items():
                     output_string += tab * 2 + token + "\n"
                     for cluster in clusters:
                         output_string += tab * 3 + str(cluster) + "\n"
-            if self.length_nodes[length][Drain.LAST_TOKEN]:
+            if nodes[Drain.LAST_TOKEN]:
                 output_string += tab + "Last_token\n"
-                for token, clusters in self.length_nodes[length][Drain.LAST_TOKEN].items():
+                for token, clusters in nodes[Drain.LAST_TOKEN].items():
                     output_string += tab * 2 + token + "\n"
                     for cluster in clusters:
                         output_string += tab * 3 + str(cluster) + "\n"
-            if self.length_nodes[length][Drain.NO_SPLIT_TOKEN]:
+            if nodes[Drain.NO_SPLIT_TOKEN]:
                 output_string += tab + "No_split_token\n"
-                clusters = self.length_nodes[length][Drain.NO_SPLIT_TOKEN]
+                clusters = nodes[Drain.NO_SPLIT_TOKEN]
                 for cluster in clusters:
                     output_string += tab * 3 + str(cluster) + "\n"
         return output_string
@@ -172,7 +188,8 @@ if __name__ == "__main__":
         "2016-09-28 04:30:31, Info CBS Warning: Unrecognized packageExtended attribute.",
         "I hate barbacue sauce fiercly.",
         "I love going for walks.",
-        "205.189.154.54 - - [01/Jul/1995:00:01:19 -0400] \"GET /shuttle/missions/sts-71/images/KSC-95EC-0423.txt HTTP/1.0\" 200 1224"
+        "205.189.154.54 - - [01/Jul/1995:00:01:19 -0400] \"GET /shuttle/missions/sts-71/images/KSC-95EC-0423.txt HTTP/1.0\" 200 1224",
+        "015-10-18 <TIME> WARN [RMCommunicator Allocator] org.apache.hadoop.ipc.Client: Address change detected. Old: msra-sa-41<IP> New: msra-sa-41:8030"
     ]
     drain = Drain()
     for l in example_logs:
