@@ -3,6 +3,7 @@ Basic version with only first token split and static similarity threshold
 """
 
 import re
+from preprocessor import Preprocessor
 
 class Cluster:
     cluster_counter = 0
@@ -44,13 +45,13 @@ class Drain:
         self.clusters = []
         self.similarity_threshold = 0.5
         self.digits_re = re.compile('\d')
+        self.preprocessor = Preprocessor()
 
     def parse_message(self, message_raw: str):
         """
         Returns found cluster.
         """
-        message_stripped = message_raw.strip()
-        tokens = message_stripped.split()
+        tokens = self.preprocessor.preprocess(message_raw)
         cluster = self.search(tokens)
         return f"{cluster.id} -> {' '.join(cluster.template_tokens)}"
 
@@ -144,7 +145,8 @@ if __name__ == "__main__":
         "send yo_mama to the server",
         "2016-09-28 04:30:31, Info CBS Warning: Unrecognized packageExtended attribute.",
         "I hate barbacue sauce fiercly.",
-        "I love going for walks."
+        "I love going for walks.",
+        "205.189.154.54 - - [01/Jul/1995:00:01:19 -0400] \"GET /shuttle/missions/sts-71/images/KSC-95EC-0423.txt HTTP/1.0\" 200 1224"
     ]
     drain = Drain()
     for l in example_logs:
