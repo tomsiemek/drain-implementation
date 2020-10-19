@@ -1,2 +1,0 @@
-- auto updating similarity threshold
-- more sophisticated split function - what special characters?
