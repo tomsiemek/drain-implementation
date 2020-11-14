@@ -102,6 +102,10 @@ class Drain:
         last_token = tokens[len(tokens) - 1]
         if contains_digits(first_token) or self.is_placeholder(first_token):
             if contains_digits(last_token) or self.is_placeholder(last_token):
+                if self.is_placeholder(last_token):
+                    return Drain.LAST_TOKEN
+                elif self.is_placeholder(first_token):
+                    return Drain.FIRST_TOKEN
                 return Drain.NO_SPLIT_TOKEN
             else:
                 return Drain.LAST_TOKEN
