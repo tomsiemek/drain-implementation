@@ -41,7 +41,7 @@ class Cluster:
             if template != Cluster.PLACEHOLDER and template == token:
                 identity_count += 1
         similarity = identity_count / self.number_of_consts
-        return similarity if similarity > self.similarity_threshold else 0
+        return similarity if similarity >= self.similarity_threshold else 0
         
     def update_template(self, tokens: [str]):
         self.found_messages += 1
@@ -51,7 +51,7 @@ class Cluster:
                 self.number_of_consts -= 1
         self.similarity_threshold = min(1, self.st_init + 0.5 * log(len(tokens) - self.number_of_consts + 1, self.st_base))
     def __str__(self):
-        return f"{self.id} found_messages: {self.found_messages} template: {' '.join(self.template_tokens)}"
+        return f"{self.id} found_messages: {self.found_messages} st: {self.similarity_threshold} template: {' '.join(self.template_tokens)}"
 
 
 class Drain:
@@ -62,6 +62,7 @@ class Drain:
         self.length_nodes = {}
         self.clusters = []
         self.preprocessor = Preprocessor()
+        self.re_placeholder = re.compile(r'<\w+>')
 
     def parse_message(self, message_raw: str):
         """
@@ -89,14 +90,18 @@ class Drain:
                 max_cluster = cluster
         return max_cluster
     
+
+    def is_placeholder(self, token):
+        return True if self.re_placeholder.match(token) else False
+
     def determine_split_token_flag(self, tokens: [str]):
         """
         Determines which split token should be used to route the tree.
         """
         first_token = tokens[0]
         last_token = tokens[len(tokens) - 1]
-        if contains_digits(first_token):
-            if contains_digits(last_token):
+        if contains_digits(first_token) or self.is_placeholder(first_token):
+            if contains_digits(last_token) or self.is_placeholder(last_token):
                 return Drain.NO_SPLIT_TOKEN
             else:
                 return Drain.LAST_TOKEN
