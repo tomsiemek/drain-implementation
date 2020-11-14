@@ -66,8 +66,12 @@ class Drain:
     def parse_message(self, message_raw: str):
         """
         Returns found cluster.
+
+        Raise Exception: "Empty string".
         """
         tokens = self.preprocessor.preprocess(message_raw)
+        if len(tokens) == 0:
+            raise "Empty string."
         cluster = self.search(tokens)
         return f"{cluster.id} -> {' '.join(cluster.template_tokens)}"
 
